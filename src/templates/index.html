@@ -19,12 +19,6 @@
             margin-top: 50px;
         }
 
-        h2 {
-            color: #333;
-            margin-top: 30px;
-            text-align: center;
-        }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -36,6 +30,7 @@
             display: flex;
             justify-content: center;
             gap: 20px;
+            flex-wrap: wrap;
             margin-bottom: 30px;
         }
 
@@ -113,6 +108,17 @@
         <h1>Fantasy Points Predictions 2024</h1>
 
         <form method="get">
+            <!-- Dropdown für die Modellwahl -->
+            <div>
+                <label for="model">Modell:</label>
+                <select name="model" id="model">
+                    {% for model in models %}
+                        <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>{{ model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Dropdown für Woche -->
             <div>
                 <label for="week">Woche:</label>
                 <select name="week" id="week">
@@ -123,6 +129,7 @@
                 </select>
             </div>
 
+            <!-- Dropdown für Position -->
             <div>
                 <label for="position">Position:</label>
                 <select name="position" id="position">
@@ -133,6 +140,7 @@
                 </select>
             </div>
 
+            <!-- Dropdown für Spieler -->
             <div>
                 <label for="name">Spieler:</label>
                 <select name="name" id="name">
@@ -156,7 +164,7 @@
                     <th class="sortable" onclick="sortTable(3)">Team</th>
                     <th class="sortable" onclick="sortTable(4)">Gegner</th>
                     <th class="sortable" onclick="sortTable(5)">Vorhergesagte Fantasy Punkte</th>
-                    <th class="sortable" onclick="sortTable(6)">Fantasy Punkte</th>
+                    <th class="sortable" onclick="sortTable(6)">Tatsächliche Fantasy Punkte</th>
                 </tr>
             </thead>
             <tbody>
@@ -168,7 +176,7 @@
                         <td>{{ row.recent_team }}</td>
                         <td>{{ row.opponent_team }}</td>
                         <td>{{ row.predicted_fantasy_points }}</td>
-                        <td>{{ row.fantasy_points }}</td>
+                        <td>{{ row.actual_fantasy_points }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -200,17 +208,14 @@
                 }
             });
 
-            // Entferne alte Zeilen und füge sortierte Zeilen ein
             rows.forEach(row => table.appendChild(row));
 
-            // Setze die Sortierung zurück
             if (columnIndex === currentSortColumn) {
                 currentSortOrder = currentSortOrder === "asc" ? "desc" : "asc";
             } else {
                 currentSortOrder = "asc";
             }
 
-            // Markiere die Spalte als sortiert
             Array.from(table.querySelectorAll("th")).forEach((th, index) => {
                 th.classList.remove("sorted-asc", "sorted-desc");
                 if (index === columnIndex) {
