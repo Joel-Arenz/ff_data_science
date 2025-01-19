@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 import joblib  # Wird verwendet, um die Modelle zu laden
-from data_loader import load_data, prepare_features, prepare_output
+from data_loading_v3 import load_data, prepare_features, prepare_output
 
 @st.cache_data
 def predict_and_merge(model_path):
@@ -27,6 +27,8 @@ def predict_and_merge(model_path):
     
     # Create the output dataframe
     df_output['predicted_fantasy_points'] = y_pred
+    df_output = df_output[(df_output['depth_team'] == 1) & (df_output['status'] == 'ACT')]
+    df_output = df_output.drop(columns=(['depth_team', 'status']))
 
     return df_output
 
