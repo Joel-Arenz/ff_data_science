@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from data_loading import load_data, prepare_features
+from data_loader import load_data, prepare_features
 
 # models
 import xgboost as xgb

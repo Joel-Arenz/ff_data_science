@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 import joblib  # Wird verwendet, um die Modelle zu laden
-from data_loading_v3 import load_data, prepare_features, prepare_output
+from data_loader import load_data, prepare_features, prepare_output
 
 @st.cache_data
 def predict_and_merge(model_path):
