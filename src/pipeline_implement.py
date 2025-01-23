@@ -48,14 +48,14 @@ def create_preprocessor(df_merged):
     X = df_merged.drop(columns=['fantasy_points'])
 
     numeric_features = X.select_dtypes(include=['int32', 'int64', 'float32', 'float64']).columns
-    categorical_features = X.select_dtypes(include=['object']).columns
+    categorical_features = list(set(X.columns) - set(numeric_features))
 
     numeric_transformer = Pipeline(steps=[
         ('scaler', StandardScaler())
     ])
     
     categorical_transformer = Pipeline(steps=[
-        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ('onehot', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'))
     ])
 
     preprocessor = ColumnTransformer(

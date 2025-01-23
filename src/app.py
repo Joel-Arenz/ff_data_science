@@ -3,6 +3,8 @@ import streamlit as st
 import joblib  # Wird verwendet, um die Modelle zu laden
 from data_loader import load_data, prepare_features, prepare_output
 
+# run 'streamlit run src/app.py' to start the app
+
 @st.cache_data
 def predict_and_merge(model_path):
     # Modell laden
