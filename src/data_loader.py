@@ -1,24 +1,6 @@
 import nfl_data_py as nfl
 import pandas as pd
 
-# volume, acr (passing & receiving) und player_rating (passing & receiving) statistiken zusammengefasst, trotzdem noch passing, receiving und rushing einzelne features
-# Totalling 60 features (columns_to_roll_v2 - racr, wopr, pacr, passer_rating, receiving_rat, sacks + acr_total, player_rating_total)
-
-# Evaluation results for model: LinearRegression
-# mean_absolute_error: 4.051465824664367
-# mean_squared_error: 31.197646889300138
-# root_mean_squared_error: 5.585485376339297
-# r2_score: 0.39497913312881416
-# spearman_rank_correlation: 0.6189654922154307
-
-# Evaluation results for model: XGBRegressor
-# mean_absolute_error: 4.061278343200684
-# mean_squared_error: 30.90032386779785
-# root_mean_squared_error: 5.5588059425354
-# r2_score: 0.4007452130317688
-# spearman_rank_correlation: 0.6245976453862347
-
-
 
 def load_data():
 
@@ -333,8 +315,8 @@ def load_data():
                     .agg(metric))
             )
 
-    # 5. NaN-Werte droppen und Index zurücksetzen
-    df_merged = df_merged.dropna().reset_index(level=0, drop=True)
+    # Nur Zeilen in denen Werte vorliegen
+    df_merged = df_merged[df_merged['streak']>3]
     
     return df_merged
 
@@ -348,7 +330,7 @@ def prepare_features(df):
                           'interceptions', 'sack_fumbles_lost', 'rushing_fumbles_lost', 'receiving_fumbles_lost', 'rushing_tds', 
                           'rushing_2pt_conversions', 'receiving_tds', 'receiving_2pt_conversions', 'passing_tds', 'status',
                           'passing_2pt_conversions', 'passing_epa', 'rushing_epa', 'receiving_epa', 'position_encoded', 'acr_total',
-                          'recent_team', 'opponent_team', 'position', 'home_score', 'away_score', 'recent_team_points_scored', 
+                          'recent_team', 'opponent_team', 'home_score', 'away_score', 'recent_team_points_scored', 'position',
                           'opponent_team_points_allowed', 'turnover', 'points_total', 'yards_total', 'epa_total', 'volume_total',
                           'player_rating_total', 'did_play'])
     return df
