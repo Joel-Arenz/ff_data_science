@@ -1,18 +1,20 @@
 import pandas as pd
 import streamlit as st
-import joblib  # Wird verwendet, um die Modelle zu laden
-from data_loader import load_data, prepare_features, prepare_output
+import joblib
+
+from pipeline.O1_data_preparation import load_data, prepare_features, prepare_output
+
 
 # run 'streamlit run src/app.py' to start the app
 
 @st.cache_data
 def predict_and_merge(model_path):
-    # Modell laden
+    # Load models via joblib
     try:
-        model = joblib.load(model_path)  # Modelle mit joblib laden
+        model = joblib.load(model_path)  
     except Exception as e:
         st.error(f"Fehler beim Laden des Modells: {e}")
-        return pd.DataFrame()  # Rückgabe eines leeren DataFrames im Fehlerfall
+        return pd.DataFrame()  
     df = load_data()
     df_output = prepare_output(df)
     df_merged = prepare_features(df)
@@ -30,38 +32,37 @@ def predict_and_merge(model_path):
     # Create the output dataframe
     df_output['predicted_fantasy_points'] = y_pred
     df_output = df_output[(df_output['depth_team'] == 1) & (df_output['status'] == 'ACT')]
-    df_output = df_output.drop(columns=(['depth_team', 'status']))
+    df_output = df_output[['season', 'week', 'player_display_name', 'position', 'recent_team', 'opponent_team', 'predicted_fantasy_points', 'fantasy_points']]
 
     return df_output
 
 
-# Hauptfunktion der Streamlit-App
+# Main Function of Streamlit-App
 def main():
+
     st.title("Fantasy Points Prediction")
     st.sidebar.header("Model Selection")
 
-    # Auswahl der Modelle
     model_options = {
         "XGBoost": "models/XGBoost_model.pkl",
         "Linear Regression": "models/Linear Regression_model.pkl"
     }
     selected_model = st.sidebar.selectbox("Select a model:", list(model_options.keys()))
 
-    # Daten vorbereiten
-    with st.spinner("Daten werden geladen und Vorhersagen erstellt..."):
+    with st.spinner("Loading data and generating predictions..."):
         data = predict_and_merge(model_options[selected_model])
 
     if data.empty:
-        return  # Beenden, falls beim Laden der Daten ein Fehler aufgetreten ist
+        return 
 
-    # Filteroptionen
+    # Filteroptions
     st.sidebar.subheader("Filter")
 
     season_filter = st.sidebar.multiselect("Season:", options=data['season'].unique())
     if season_filter:
         data = data[data['season'].isin(season_filter)]
 
-    week_filter = st.sidebar.multiselect("Week:", options=data['week'].unique())
+    week_filter = st.sidebar.multiselect("Week:", options=sorted(data['week'].unique(), reverse=True))
     if week_filter:
         data = data[data['week'].isin(week_filter)]
     
@@ -73,13 +74,15 @@ def main():
     if position_filter:
         data = data[data['position'].isin(position_filter)]
 
-    # Tabelle anzeigen (nach season, week und predicted_fantasy_points sortiert)
     data = data.sort_values(by=["season", "week", "predicted_fantasy_points"], ascending=[False, False, False])
+    
+    data['season'] = data['season'].astype(str)  
 
-    data['season'] = data['season'].astype(str)  # Sicherstellen, dass die Season als ganze Zahl dargestellt wird (ohne , als Seperator)
-    data['player_id'] = data['player_id'].astype(str) # Sicherstellen, dass die player_id als ganze Zahl dargestellt wird (ohne , als Seperator)
+    data.columns = [
+        "Season", "Week", "Player Name", "Position", "Recent Team", "Opponent Team", "Actual Fantasy Points", "Predicted Fantasy Points"
+    ]
 
-    st.write("Gefilterte Daten")
+    st.write("Note: Only players who have played three consecutive games in the last three weeks are included in the predictions.")
     st.dataframe(data.reset_index(drop=True), use_container_width=True)
 
 if __name__ == "__main__":
