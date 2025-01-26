@@ -79,7 +79,7 @@ def main():
     data['season'] = data['season'].astype(str)  
 
     data.columns = [
-        "Season", "Week", "Player Name", "Position", "Recent Team", "Opponent Team", "Actual Fantasy Points", "Predicted Fantasy Points"
+        "Season", "Week", "Player Name", "Position", "Recent Team", "Opponent Team", "Predicted Fantasy Points", "Actual Fantasy Points"
     ]
 
     st.write("Note: Only players who have played three consecutive games in the last three weeks are included in the predictions.")
