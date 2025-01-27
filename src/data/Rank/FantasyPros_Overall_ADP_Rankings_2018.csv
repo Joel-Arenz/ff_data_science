@@ -1,0 +1,354 @@
+Rank;Player;POS
+1;Todd Gurley;RB1
+2;Le'Veon Bell ;RB2
+3;David Johnson;RB3
+4;Ezekiel Elliott;RB4
+5;Antonio Brown;WR1
+6;Saquon Barkley;RB5
+7;Alvin Kamara;RB6
+8;Leonard Fournette;RB7
+9;Kareem Hunt;RB8
+10;DeAndre Hopkins;WR2
+11;Melvin Gordon;RB9
+12;dell Beckham Jr.;WR3
+13;Dalvin Cook;RB10
+14;Julio Jones;WR4
+15;Christian McCaffrey;RB11
+16;Michael Thomas;WR5
+17;Devonta Freeman;RB12
+18;Davante Adams;WR6
+19;Keenan Allen;WR7
+20;Jordan Howard;RB13
+21;Rob Gronkowski;TE1
+22;A.J. Green ;WR8
+23;Joe Mixon;RB14
+24;Aaron Rodgers;QB1
+25;Mike Evans;WR9
+26;LeSean McCoy;RB15
+27;Tyreek Hill;WR10
+28;Travis Kelce;TE2
+29;Stefon Diggs;WR11
+30;T.Y. Hilton;WR12
+31;Alex Collins ;RB16
+32;Adam Thielen;WR13
+33;Kenyan Drake;RB17
+34;Amari Cooper;WR14
+35;Derrick Henry;RB18
+36;Deshaun Watson;QB2
+37;Jay Ajayi ;RB19
+38;Doug Baldwin;WR15
+39;Zach Ertz;TE3
+40;Royce Freeman;RB20
+41;JuJu Smith-Schuster;WR16
+42;Larry Fitzgerald;WR17
+43;Jarvis Landry;WR18
+44;Tom Brady;QB3
+45;Lamar Miller;RB21
+46;Brandin Cooks;WR19
+47;Demaryius Thomas ;WR20
+48;Russell Wilson;QB4
+49;Jimmy Graham;TE4
+50;Josh Gordon ;WR21
+51;Mark Ingram II ;RB22
+52;Allen Robinson II;WR22
+53;Marvin Jones Jr. ;WR23
+54;Golden Tate;WR24
+55;Chris Hogan;WR25
+56;Cam Newton ;QB5
+57;Marshawn Lynch ;RB23
+58;Carlos Hyde;RB24
+59;Greg lsen;TE5
+60;Drew Brees;QB6
+61;Dion Lewis;RB25
+62;Kerryon Johnson ;RB26
+63;Tevin Coleman;RB27
+64;Marquise Goodwin;WR26
+65;Corey Davis;WR27
+66;Evan Engram;TE6
+67;Jamaal Williams;RB28
+68;Michael Crabtree;WR28
+69;Rex Burkhead;RB29
+70;Carson Wentz;QB7
+71;Julian Edelman ;WR29
+72;Sony Michel;RB30
+73;Alshon Jeffery;WR30
+74;Kyle Rudolph;TE7
+75;Emmanuel Sanders ;WR31
+76;Delanie Walker ;TE8
+77;William Fuller V ;WR32
+78;Kirk Cousins;QB8
+79;Rashaad Penny;RB31
+80;Sammy Watkins;WR33
+81;Trey Burton ;TE9
+82;Chris Carson;RB32
+83;Andrew Luck;QB9
+84;Jordy Nelson;WR34
+85;Devin Funchess;WR35
+86;Robert Woods;WR36
+87;Cooper Kupp;WR37
+88;Jordan Reed ;TE10
+89;Isaiah Crowell ;RB33
+90;Tarik Cohen;RB34
+91;Matthew Stafford;QB10
+92;Chris Thompson;RB35
+93;Ben Roethlisberger;QB11
+94;Jimmy Garoppolo;QB12
+95;Robbie Chosen;WR38
+96;Marlon Mack;RB36
+97;Peyton Barber;RB37
+98;Pierre Garcon ;WR39
+99;Ronald Jones;RB38
+100;Matt Ryan;QB13
+101;Philip Rivers;QB14
+102;Adrian Peterson;RB39
+103;Nelson Agholor;WR40
+104;Randall Cobb;WR41
+105;Jamison Crowder;WR42
+106;Duke Johnson Jr.;RB40
+107;Jared Goff;QB15
+108;Sterling Shepard;WR43
+109;David Njoku;TE11
+110;Patrick Mahomes II;QB16
+111;Aaron Jones r.;RB41
+112;Nick Chubb;RB42
+113;Kelvin Benjamin;WR44
+114;C.J. Anderson;RB43
+115;Kenny Stills;WR45
+116;Jack Doyle ;TE12
+117;James White;RB44
+118;Calvin Ridley;WR46
+119;DeVante Parker;WR47
+121;Allen Hurns;WR48
+122;Alfred Morris;RB45
+123;Mike Williams;WR49
+124;Devontae Booker;RB46
+125;Matt Breida ;RB47
+127;Alex Smith ;QB17
+128;DJ Moore;WR50
+129;George Kittle;TE13
+130;Latavius Murray;RB48
+131;Keelan Cole Sr.;WR51
+132;Corey Clement;RB49
+133;Ty Montgomery;RB50
+134;Tyler Eifert ;TE14
+135;Derek Carr;QB18
+136;Dak Prescott;QB19
+137;Marcus Mariota;QB20
+139;Bilal Powell ;RB51
+141;LeGarrette Blount;RB52
+142;Michael Gallup;WR52
+143;Kenny Golladay;WR53
+144;Giovani Bernard;RB53
+145;Josh Doctson;WR54
+147;.J. Howard;TE15
+148;Tyler Lockett;WR55
+149;Jordan Wilkins;RB54
+151;Mohamed Sanu Sr.;WR56
+152;Jameis Winston;QB21
+153;James Conner;RB55
+156;Doug Martin;RB56
+158;John Brown;WR57
+160;Eli Manning;QB22
+161;Chris Godwin;WR58
+162;Anthony Miller;WR59
+164;Austin Ekeler;RB57
+165;Rishard Matthews;WR60
+167;Eric Ebron;TE16
+168;D'Onta Foreman;RB58
+169;Dede Westbrook;WR61
+174;Geronimo Allison ;WR62
+175;Tyrell Williams;WR63
+176;Mitchell Trubisky;QB23
+178;Cameron Meredith ;WR64
+179;Andy Dalton;QB24
+180;Case Keenum;QB25
+181;Spencer Ware;RB59
+182;Courtland Sutton;WR65
+183;Frank Gore ;RB60
+184;Benjamin Watson;TE17
+187;Theo Riddick;RB61
+189;DeSean Jackson;WR66
+190;Austin Seferian-Jenkins;TE18
+192;Ricky Seals-Jones;TE19
+193;Jared Cook;TE20
+197;Martavis Bryant ;WR67
+198;Cameron Brate;TE21
+199;Ted Ginn Jr.;WR68
+200;T.J. Yeldon;RB62
+201;Blake Bortles;QB26
+202;Paul Richardson Jr. ;WR69
+203;Robert Kelley;RB63
+204;John Ross;WR70
+205;Mike Gesicki;TE22
+206;Nyheim Hines;RB64
+209;Christian Kirk;WR71
+210;Austin Hooper;TE23
+213;Tyrod Taylor;QB27
+214;Dez Bryant ;WR72
+215;Charles Clay;TE24
+216;Donte Moncrief;WR73
+217;Danny Amendola;WR74
+219;Marqise Lee ;WR75
+225;John Kelly Jr.;RB65
+226;Samaje Perine;RB66
+227;Javorius Allen;RB67
+230;Jeremy Hill ;RB68
+231;Hayden Hurst;TE25
+232;Antonio Gates;TE26
+233;James Washington;WR76
+234;Chris Ivory;RB69
+235;Vance McDonald;TE27
+236;Baker Mayfield;QB28
+239;Phillip Dorsett II;WR77
+242;Sam Bradford;QB29
+243;Cole Beasley;WR78
+244;Kalen Ballage;RB70
+245;Sam Darnold;QB30
+246;Kenneth Dixon;RB71
+247;Tre'Quan Smith;WR79
+248;Joe Flacco;QB31
+249;Ryan Tannehill;QB32
+250;Dallas Goedert;TE28
+251;Chase Edmonds;RB72
+252;Lamar Jackson;QB33
+253;Mike Wallace ;WR80
+254;Jake Butt ;TE29
+255;Brandon Marshall;WR81
+256;Rod Smith;RB73
+257;Quincy Enunwa;WR82
+259;Taywan Taylor;WR83
+260;Vernon Davis;TE30
+261;Josh Allen;QB34
+262;Darren Sproles;RB74
+263;Jesse James;TE31
+264;Terrance Williams;WR84
+265;Ryan Grant ;WR85
+266;Nick Foles;QB35
+267;Jonathan Stewart;RB75
+268;Wayne Gallman Jr.;RB76
+269;Cordarrelle Patterson;RB77
+270;Ameer Abdullah;RB78
+271;Travis Benjamin;WR86
+274;Josh Rosen;QB36
+275;Nick Vannett;TE32
+276;Jermaine Kearse;WR87
+277;Terrelle Pryor Sr.;WR88
+281;Malcolm Brown ;RB79
+282;Albert Wilson ;WR89
+284;Antonio Callaway;WR90
+286;Dante Pettis;WR91
+287;Ryan Fitzpatrick;QB37
+288;Zay Jones;WR92
+289;Tavon Austin;WR93
+290;Kevin White ;WR94
+291;Luke Willson;TE33
+292;Corey Coleman;WR95
+293;Ryan Griffin;TE34
+296;Hunter Henry;TE35
+297;Jaylen Samuels;RB80
+298;C.J. Prosise ;RB81
+300;Garrett Celek;TE36
+302;Blake Jarwin;TE37
+304;Virgil Green;TE38
+305;Corey Grant ;RB82
+306;Jordan Matthews;TE39
+308;Willie Snead;WR96
+309;Josh McCown;QB38
+310;Jaron Brown;WR97
+311;AJ McCarron;QB39
+312;Elijah McGuire;RB83
+313;Mike Gillislee;RB84
+314;J'Mon Moore;WR98
+316;DJ Chark Jr.;WR99
+317;Laquon Treadwell;WR100
+320;Mark Andrews;TE40
+321;Adam Humphries;WR101
+322;Pharoh Cooper;WR102
+323;Keke Coutee;WR103
+324;Joe Williams;RB85
+325;Christine Michael;RB86
+326;Chester Rogers;WR104
+327;Torrey Smith;WR105
+329;Trent Taylor;WR106
+331;Jalen Richard;RB87
+332;Brandon Zylstra;WR107
+333;Geoff Swaim;TE41
+335;Boston Scott;RB88
+336;J.D. McKissic;RB89
+337;Charles Sims;RB90
+338;Chris Warren;RB91
+339;Rico Gathers;TE42
+340;Alfred Blue;RB92
+341;J.J. Nelson;WR108
+342;Chad Williams;WR109
+343;Nathan Peterman;QB40
+344;Rashard Higgins;WR110
+345;Jonathan Williams;RB93
+346;Adam Shaheen;TE43
+347;Gerald Everett;TE44
+348;Curtis Samuel;WR111
+349;Cameron Artis-Payne;RB94
+350;John Conner;RB95
+351;Brice Butler;WR112
+352;Terrance West;RB96
+353;Tyler Higbee;TE45
+356;Mark Walton;RB97
+358;Taylor Gabriel;WR113
+359;Jeremy Maclin ;WR114
+361;Tyler Boyd;WR115
+362;Jordan Akins;TE46
+363;Stevan Ridley;RB98
+364;Orleans Darkwa;RB99
+365;Jacquizz Rodgers;RB100
+366;Jonnu Smith;TE47
+367;DeAndre Washington;RB101
+368;Wendell Smallwood;RB102
+369;Tyler Kroft ;TE48
+371;Cody Latimer;WR116
+372;Marcus Murphy ;RB103
+373;Teddy Bridgewater;QB41
+374;Marcedes Lewis;TE49
+375;Phillip Lindsay;RB104
+376;Brandon LaFell ;WR117
+377;Malcolm Mitchell;WR118
+378;Akeem Hunt;RB105
+379;Equanimeous St. Brown;WR119
+380;Jake Kumerow;WR120
+381;Javon Wims;WR121
+382;C.J. Ham;RB106
+383;Coby Fleener;TE50
+384;Bruce Ellington;WR122
+385;Kendall Wright;WR123
+386;Kyle Juszczyk;RB107
+387;Fitzgerald Toussaint;RB108
+388;Shane Vereen;RB109
+389;Troymaine Pope;RB110
+391;De'Angelo Henderson Sr.;RB111
+392;David Moore;WR124
+393;Johnny Manziel;QB42
+394;Bo Scarbrough;RB112
+395;Robert Turbin ;RB113
+396;Eric Tomlinson ;TE51
+397;Charcandrick West;RB114
+398;Kerwynn Williams;RB115
+399;Kapri Bibbs;RB116
+400;Deonte Thompson;WR125
+401;Aaron Hernandez;TE52
+402;Derek Carrier;TE53
+403;Justin Jackson;RB117
+404;Akrum Wadley;RB118
+405;Bennie Fowler;WR126
+406;Seth Roberts;WR127
+407;Tim Tebow;TE54
+408;Jeff Heuerman ;TE55
+409;DaeSean Hamilton;WR128
+411;Ito Smith ;RB119
+412;Kyle Lauletta;QB43
+413;Mason Rudolph;QB44
+414;Marquez Valdes-Scantling;WR129
+415;Stephen Anderson;TE56
+416;Ed Dickson;TE57
+417;Jacoby Brissett;QB45
+418;Chris Herndon;TE58
+419;Jeremy McNichols;RB120
+420;Seth DeValve;TE59
