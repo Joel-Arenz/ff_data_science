@@ -91,7 +91,7 @@ def load_data():
     ##merge with the rest
     df_merged = pd.merge(
         df_merged,
-        df_combined[['season','week','team','points_allowed', 'points_scored', 'rolling_avg_points_scored', 'rolling_avg_points_allowed', 'offense_rank', 'defense_rank']],
+        df_combined[['season','week','team','points_allowed', 'points_scored', 'avg_points_scored', 'avg_points_allowed']],
         on=['season', 'week', 'team'],
         how='left')
 
