@@ -2,7 +2,7 @@ import nfl_data_py as nfl
 import pandas as pd
 
 
-def load_data():
+def load_ind_data():
 
     df_ids = nfl.import_ids()
     df_roster = nfl.import_weekly_rosters(list(range(2018, 2025)))
@@ -301,7 +301,7 @@ def load_data():
 
 
 
-def prepare_features(df):
+def prepare_ind_features(df):
     df = df.drop(columns=['completions', 'attempts', 'passing_yards', 'sacks', 'depth_team', 'sack_yards', 'player_display_name',
                           'passing_air_yards', 'pacr', 'carries', 'rushing_yards', 'receptions', 'targets', 'receiving_yards', 
                           'racr', 'wopr', 'passing_bad_throws', 'times_pressured', 'receiving_rat', 'rushing_broken_tackles', 
@@ -316,10 +316,143 @@ def prepare_features(df):
 
 
 
-def prepare_output(df):
+def prepare_ind_output(df):
     df = df[['season', 'week', 'player_display_name', 'position', 'depth_team', 'status', 'recent_team', 'opponent_team', 'fantasy_points']].copy()
     return df
 
+
+
+def load_sys_data():
+
+    df_rank = pd.read_csv('data/FantasyPros_Overall_ADP_Rankings.csv', encoding='ISO-8859-1',delimiter=';') #adp (average draft pick) ranking
+    df_weekly = nfl.import_weekly_data(list(range(2015,2025))) #player data
+    df_schedule = nfl.import_schedules(list(range(2015,2025))) #game data
+    df_weekly = df_weekly.rename(columns={'player_display_name': 'name'})
+
+    #clean data
+    df_weekly = df_weekly[(df_weekly['season_type'] == 'REG') & (df_weekly['position'].isin(['QB', 'WR', 'RB', 'TE']))].reset_index() #only regualer season games
+    df_schedule = df_schedule[df_schedule['game_type'] == 'REG']
+    relevant_columns = ['season','week','home_team','away_team','home_score','away_score', 'spread_line','roof','surface','home_coach','away_coach',
+                        'stadium','game_id'] #first feature selection for better overview
+
+    df_schedule = df_schedule[relevant_columns]
+
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('OAK', 'LV', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('OAK', 'LV', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('OAK', 'LV', regex=False) 
+
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('STL', 'LA', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('STL', 'LA', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('STL', 'LA', regex=False) 
+
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('SD', 'LAC', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('SD', 'LAC', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('SD', 'LAC', regex=False) 
+
+    #prepare df_weekly
+    df_weekly['season'] = df_weekly['season'].astype('int64') 
+    df_weekly['week'] = df_weekly['week'].astype('int64')
+    df_weekly['game_id_home_away'] = df_weekly['season'].astype(str) + '_' + df_weekly['week'].apply(lambda x: f"{x:02d}")+'_'+df_weekly['recent_team']+'_'+df_weekly['opponent_team'] #create game_id 
+    df_weekly['game_id_away_home'] = df_weekly['season'].astype(str) + '_' + df_weekly['week'].apply(lambda x: f"{x:02d}")+'_'+df_weekly['opponent_team']+'_'+df_weekly['recent_team'] 
+
+    #merge df_rank with df_weekly
+    df_merged = df_weekly.merge(
+        df_rank,
+        on=['name','season'],
+        how='left')
+
+    #prepare df
+    df_merged = pd.melt(
+        df_merged,
+        id_vars=['player_id', 'name', 'position', 'season', 'week','recent_team', 'opponent_team', 'fantasy_points','pos','rank'],
+        value_vars=['game_id_home_away', 'game_id_away_home'],
+        var_name='game_id_type',
+        value_name='game_id')
+
+    #merge df_merged with df_schedules
+    df_merged = pd.merge(df_merged, df_schedule[['home_team','away_team','home_score','away_score', 'spread_line','roof','surface',
+                                                'home_coach','away_coach','stadium','game_id']], on= 'game_id', how='inner')
+
+    df_merged['home'] = (df_merged['home_team'] == df_merged['recent_team']).astype(int)
+
+    # points_scored and points_allowed as metric for how strong recent_team and how weak opponent_team performed recently
+    df_merged['recent_team_points_scored'] = df_merged.apply(lambda row: row['home_score'] if row['home'] == 1 else row['away_score'], axis=1)
+    df_merged['opponent_team_points_allowed'] = df_merged['recent_team_points_scored']
+
+    df_unique_opponent_team_points_allowed = df_merged.drop_duplicates(subset=['game_id', 'opponent_team', 'opponent_team_points_allowed'])
+    df_unique_recent_team_points_scored = df_merged.drop_duplicates(subset=['game_id', 'recent_team', 'recent_team_points_scored'])
+
+    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed.sort_values(by=['opponent_team', 'season', 'week']).reset_index(drop=True)
+    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored.sort_values(by=['recent_team', 'season', 'week']).reset_index(drop=True)
+
+    df_unique_opponent_team_points_allowed['ewm_opponent_team_points_allowed_l3w'] = (
+        df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=3).mean())
+        .reset_index(level=0, drop=True)
+    )
+
+    for metric in ['min', 'max']:
+            df_unique_opponent_team_points_allowed[f"{metric}_opponent_team_points_allowed_l3w"] = (
+                df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+                .apply(lambda x: x.shift(1).rolling(window=3, min_periods=3).agg(metric))  # shift(1) schließt aktuelle Woche aus
+                .reset_index(level=0, drop=True)  # Index zurücksetzen
+        )
+
+    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed[['game_id', 'opponent_team', 'ewm_opponent_team_points_allowed_l3w', 'min_opponent_team_points_allowed_l3w', 'max_opponent_team_points_allowed_l3w']]
+    df_merged = pd.merge(df_merged, df_unique_opponent_team_points_allowed, on=['game_id','opponent_team'], how='inner')
+
+    df_unique_recent_team_points_scored['ewm_recent_team_points_scored_l3w'] = (
+        df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=1).mean())
+        .reset_index(level=0, drop=True)
+    )
+
+    for metric in ['min', 'max']:
+        df_unique_recent_team_points_scored[f"{metric}_recent_team_points_scored_l3w"] = (
+            df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+            .apply(lambda x: x.shift(1).rolling(window=3, min_periods=1).agg(metric))  # shift(1) schließt aktuelle Woche aus
+            .reset_index(level=0, drop=True)  # Index zurücksetzen
+        )
+
+    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored[['game_id', 'recent_team', 'ewm_recent_team_points_scored_l3w', 'min_recent_team_points_scored_l3w', 'max_recent_team_points_scored_l3w']]
+    df_merged = pd.merge(df_merged, df_unique_recent_team_points_scored, on=['game_id','recent_team'], how='inner')
+
+    #drop missing values = players that were not in the adp df
+    df_merged = df_merged.dropna(subset=['rank'])
+
+    #Rank players for each team and position based on their adp
+
+    # Sort the players by their draft rank (lower rank is better)
+    df_merged['rank'] = pd.to_numeric(df_merged['rank'], errors='coerce')  # Ensure rank is numeric
+    # Create new column that ranks players within each team and position for every game
+    df_merged['ranked_position'] = (
+        df_merged.groupby(['recent_team', 'position','game_id'])['rank']  # Group by team and position
+        .rank(method='min', ascending=True)  # Rank with smallest value having rank 1
+        .astype(int)  # Convert the rank to an integer
+    )
+    #Formatted column with the position and rank (e.g., 'WR1', 'RB2', etc.)
+    df_merged['role'] = df_merged['position'] + df_merged['ranked_position'].astype(str)
+
+    #rolling average of past fantasy points for each role
+    df_merged = df_merged.sort_values(by=['recent_team','role','season','week'])
+    df_merged['avg_fantasy_points'] = (
+        df_merged.groupby(['recent_team','role'])['fantasy_points']
+        .apply(lambda x: x.shift(1).rolling(window=5, min_periods=1).mean())  # Shift and calculate rolling mean
+    )
+    df_merged = df_merged.dropna() #drop the first row for every position in df, because of missing value for avg_fantasy_points
+
+    return df_merged
+
+
+def prepare_sys_features(df):
+    df = df[['season', 'week', 'recent_team', 'position', 'ranked_position', 'opponent_team', 'spread_line', 'roof', 'home', 'ewm_recent_team_points_scored_l3w', 'min_recent_team_points_scored_l3w', 'max_recent_team_points_scored_l3w', 'ewm_opponent_team_points_allowed_l3w', 'min_opponent_team_points_allowed_l3w', 'max_opponent_team_points_allowed_l3w', 'avg_fantasy_points','fantasy_points']]
+    return df
+
+
+
+def prepare_sys_output(df):
+    df = df[['season', 'week', 'role', 'recent_team', 'opponent_team', 'fantasy_points']].copy()
+    return df
 
 
 def split_data(df_merged):

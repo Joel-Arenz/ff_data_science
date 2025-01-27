@@ -23,7 +23,7 @@ def evaluate_models(model, X_test, y_test):
 
 
 
-def plot_feature_importances(model, X_train):
+def plot_feature_importances(model, X_train, feature_names):
     model_name = model.named_steps['model'].__class__.__name__
     print(f"Plotting feature importances for model: {model_name}")
 
@@ -32,9 +32,9 @@ def plot_feature_importances(model, X_train):
     shap_values = explainer(X_train)
 
     # Summary plot
-    shap.summary_plot(shap_values, X_train)
+    shap.summary_plot(shap_values, features=X_train, feature_names=feature_names)
 
     # Bar plot
-    shap.summary_plot(shap_values, X_train, plot_type="bar")
+    shap.summary_plot(shap_values, features=X_train, feature_names=feature_names, plot_type="bar")
 
     print("\n")

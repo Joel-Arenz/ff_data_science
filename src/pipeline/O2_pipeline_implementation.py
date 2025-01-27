@@ -54,9 +54,9 @@ def optimize_hyperparameters(model, param_grid, X_train, y_train, preprocessor):
 
 
 
-def save_model(model, model_name):
+def save_model(model, approach_name, model_name):
     # Speicherpfad definieren
-    file_path = f"models/{model_name}_model.pkl"
+    file_path = f"models/{approach_name}/{model_name}_model.pkl"
     joblib.dump(model, file_path)
     print(f"Modell '{model_name}' wurde unter '{file_path}' gespeichert.")
 
