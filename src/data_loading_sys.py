@@ -9,10 +9,8 @@ from sklearn.preprocessing import PolynomialFeatures
 def load_data():
 
     df_rank = pd.read_csv('/Users/alexanderarens/Desktop/data_science_project/data/FantasyPros_Overall_ADP_Rankings.csv', encoding='ISO-8859-1',delimiter=';') #adp (average draft pick) ranking
-    df_weekly = nfl.import_weekly_data(years=range(2015,2024)) #main df
+    df_weekly = nfl.import_weekly_data(years=range(2015,2024)) #player data
     df_schedule = nfl.import_schedules(years=range(2015,2024)) #game data
-    file_path = "/Users/alexanderarens/Desktop/data_science_project/data/games.csv"  
-    df = pd.read_csv(file_path) #team stats
     df_weekly = df_weekly.rename(columns={
         'player_display_name': 'name',
         'recent_team': 'team',
@@ -22,7 +20,6 @@ def load_data():
     #clean data
     df_weekly = df_weekly[df_weekly['season_type'] == 'REG'] #only regualer season games
     df_schedule = df_schedule[df_schedule['game_type'] == 'REG']
-    df = df[df['game_type'] == 'REG']
     relevant_columns = ['season','week','home_team','away_team','home_score','away_score','location',
                             'spread_line','roof','surface','home_coach','away_coach','stadium','game_id'] #first feature selection for better overview
     df_schedule = df_schedule[relevant_columns]
@@ -55,12 +52,12 @@ def load_data():
                         how='inner')
 
     #Create df for home teams
-    home_df = df[['game_id','season','week','gameday','home_team','home_score','away_team','away_score']].rename(
+    home_df = df_schedule[['game_id','season','week','home_team','home_score','away_team','away_score']].rename(
         columns={'home_team': 'team', 'home_score': 'points_scored', 'away_team': 'opponent', 'away_score': 'points_allowed'}
     ).assign(location='home')
 
     #Create df for away teams
-    away_df = df[['game_id', 'season', 'week', 'gameday', 'away_team', 'away_score', 'home_team', 'home_score']].rename(
+    away_df = df_schedule[['game_id', 'season', 'week', 'away_team', 'away_score', 'home_team', 'home_score']].rename(
         columns={'away_team': 'team', 'away_score': 'points_scored', 'home_team': 'opponent', 'home_score': 'points_allowed'}
     ).assign(location='away')
 

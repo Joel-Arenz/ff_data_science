@@ -19,3 +19,5 @@ first_model.ipynb
 first_try.ipynb
 pipeline.ipynb
 preprocessing.py
+data/games.csv
+data/nflcombine.csv
