@@ -1,0 +1,21 @@
+.venv
+
+
+# Ignore log files
+*.log
+
+# Ignore compiled code
+*.o
+*.so
+*.class
+
+# Ignore directories
+clean_code/
+
+
+# Ignore specific files
+data_sighting.ipynb
+first_model.ipynb
+first_try.ipynb
+pipeline.ipynb
+preprocessing.py
