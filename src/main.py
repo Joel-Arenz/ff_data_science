@@ -24,40 +24,44 @@ def main():
 
     # Define the approach
     approaches = {
-        'individual_approach': (X_train_ind, X_test_ind, y_train_ind, y_test_ind, preprocessor_ind),
-        'systematic_approach': (X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys)
-    }
-
-    # Define the models and their hyperparameters
-    models = {
-        'XGBoost': (XGBRegressor(), {
+        'individual_lr_approach': (LinearRegression(), X_train_ind, X_test_ind, y_train_ind, y_test_ind, preprocessor_ind, {
+            'model__fit_intercept': [True, False],
+            'model__n_jobs': [1, -1]
+        }),
+        'individual_xgb_approach': (XGBRegressor(), X_train_ind, X_test_ind, y_train_ind, y_test_ind, preprocessor_ind,  {
             'model__n_estimators': [100, 500],
             'model__max_depth': [3, 6],
             'model__learning_rate': [0.05, 0.1]
         }),
-        'Linear Regression': (LinearRegression(), {
+        # 'individual_lstm_approach': (X_train_ind, X_test_ind, y_train_ind, y_test_ind, preprocessor_ind),
+        'systematic_lr_approach': (LinearRegression(), X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys, {
             'model__fit_intercept': [True, False],
             'model__n_jobs': [1, -1]
+        }),
+        'systematic_xgb_approach': (XGBRegressor(), X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys, {
+            'model__n_estimators': [100, 500],
+            'model__max_depth': [3, 6],
+            'model__learning_rate': [0.05, 0.1]
         })
+        # 'systematic_lstm_approach': (X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys)
     }
 
-    for approach_name, (X_train, X_test, y_train, y_test, preprocessor) in approaches.items():
+
+    for approach_name, (model, X_train, X_test, y_train, y_test, preprocessor, param_grid) in approaches.items():
         # Fit the preprocessor
         preprocessor.fit(X_train)
-        # Run pipeline for each model
-        for model_name, (model, param_grid) in models.items():
-            print(f"Performing Grid Search for {approach_name} {model_name}...")
-            best_model = optimize_hyperparameters(model, param_grid, X_train, y_train, preprocessor)
-            print(f"Evaluating {approach_name} {model_name}...")
-            evaluate_models(best_model, X_test, y_test)
-            X_train_transformed = preprocessor.transform(X_train)
-            
-            # Get feature names after preprocessing
-            feature_names = preprocessor.get_feature_names_out()
-            plot_feature_importances(best_model, X_train_transformed, feature_names)
-            
-            save_model(best_model, approach_name, model_name)
-
+   
+        print(f"Performing Grid Search for {approach_name}...")
+        best_model = optimize_hyperparameters(model, param_grid, X_train, y_train, preprocessor)
+        print(f"Evaluating {approach_name}...")
+        evaluate_models(best_model, X_test, y_test)
+        X_train_transformed = preprocessor.transform(X_train)
+        
+        # Get feature names after preprocessing
+        feature_names = preprocessor.get_feature_names_out()
+        plot_feature_importances(best_model, X_train_transformed, feature_names)
+        
+        save_model(best_model, approach_name)
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ def predict_and_merge(model_path, approach):
         df_merged = prepare_sys_features(df)
 
     # Filter the data for the 2024 season
-    df_test = df_merged[df_merged['season'] == 2024]
+    df_test = df_merged[df_merged['time_index'] > 202318]
     df_output = df_output[df_output['season'] == 2024]
 
     # Prepare the data for prediction
@@ -55,8 +55,8 @@ def main():
     selected_approach = st.sidebar.selectbox("Select an approach:", approach_options)
 
     model_options = {
-        "XGBoost": f"models/{selected_approach.lower()}_approach/XGBoost_model.pkl",
-        "Linear Regression": f"models/{selected_approach.lower()}_approach/Linear Regression_model.pkl"
+        "XGBoost": f"models/{selected_approach.lower()}_xgb_approach_model.pkl",
+        "Linear Regression": f"models/{selected_approach.lower()}_lr_approach_model.pkl"
     }
     selected_model = st.sidebar.selectbox("Select a model:", list(model_options.keys()))
 
