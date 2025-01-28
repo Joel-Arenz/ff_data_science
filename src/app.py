@@ -99,7 +99,7 @@ def main():
         ]
 
     # Sort the data by Season, Week, and Predicted Fantasy Points
-    data = data.sort_values(by=["Season", "Week", "Predicted Fantasy Points"], ascending=[True, True, False])
+    data = data.sort_values(by=["Season", "Week", "Predicted Fantasy Points"], ascending=[False, False, False])
 
     # Remove the comma separator from the Season column
     data['Season'] = data['Season'].astype(str).str.replace(",", "")
