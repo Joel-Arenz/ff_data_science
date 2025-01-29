@@ -2,47 +2,60 @@ import pandas as pd
 import streamlit as st
 import joblib
 
-from pipeline.O1_data_preparation import load_ind_data, prepare_ind_features, prepare_ind_output, load_sys_data, prepare_sys_features, prepare_sys_output
-
+from pipeline.O1_data_loading import load_ind_data, load_sys_data
+from pipeline.O2_data_preparation import create_ind_train_and_test_data_for_lstm, prepare_ind_data_for_lstm_prediction_and_outcome, prepare_ind_features_for_lr_and_xgb, prepare_ind_output_for_lr_and_xgb, prepare_sys_features_for_lr_and_xgb, prepare_sys_output_for_lr_and_xgb, split_data_for_lr_and_xgb, prepare_ind_data_for_lstm_training, split_data_for_lstm
+from pipeline.O6_predict_functions import predict_2024_season_for_lstm
+from tensorflow.keras.losses import MeanSquaredError
+from tensorflow.keras.models import load_model
 
 # run 'streamlit run src/app.py' to start the app
 
 @st.cache_data
-def predict_and_merge(model_path, approach):
+def predictions(model_path, approach):
     # Load models via joblib
     try:
-        model = joblib.load(model_path)  
+        if model_path.endswith('.h5'):
+            model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
+            label_encoder = joblib.load("models/label_encoder.joblib")
+            scaler = joblib.load("models/scaler.joblib")
+        else:
+            model = joblib.load(model_path)
     except Exception as e:
         st.error(f"Fehler beim Laden des Modells: {e}")
-        return pd.DataFrame()  
-    
+        return pd.DataFrame()
+
+    # Prepare Data
     if approach == "Individual":
         df = load_ind_data()
-        df_output = prepare_ind_output(df)
-        df_merged = prepare_ind_features(df)
+        if model_path.endswith('.h5'):
+            _, df_seq = create_ind_train_and_test_data_for_lstm(df)
+            df_pred, _, _ = prepare_ind_data_for_lstm_prediction_and_outcome(df_seq)
+            df_output = predict_2024_season_for_lstm(model, df_pred, scaler, label_encoder)
+        else:
+            df_pred = prepare_ind_features_for_lr_and_xgb(df)
+            df_output = prepare_ind_output_for_lr_and_xgb(df)
+            df_pred = df_pred[df_pred['time_index'] > 202318]
+            df_output = df_output[df_output['season'] == 2024]
+            X_test = df_pred.drop(columns=['fantasy_points'])
+            y_pred = model.predict(X_test)
+            df_output['predicted_fantasy_points'] = y_pred
     else:
         df = load_sys_data()
-        df_output = prepare_sys_output(df)
-        df_merged = prepare_sys_features(df)
+        df_pred = prepare_sys_features_for_lr_and_xgb(df)
+        df_output = prepare_sys_output_for_lr_and_xgb(df)
+        df_pred = df_pred[df_pred['time_index'] > 202318]
+        df_output = df_output[df_output['season'] == 2024]
+        X_test = df_pred.drop(columns=['fantasy_points'])
+        y_pred = model.predict(X_test)
+        df_output['predicted_fantasy_points'] = y_pred
 
-    # Filter the data for the 2024 season
-    df_test = df_merged[df_merged['time_index'] > 202318]
-    df_output = df_output[df_output['season'] == 2024]
-
-    # Prepare the data for prediction
-    X_test = df_test.drop(columns=['fantasy_points'])
-    
-    # Make predictions
-    y_pred = model.predict(X_test)
-    
-    # Create the output dataframe
-    df_output['predicted_fantasy_points'] = y_pred
-    
+    # Filter and sort output
     if approach == "Individual":
         df_output = df_output[(df_output['depth_team'] == 1) & (df_output['status'] == 'ACT')]
         df_output = df_output[['season', 'week', 'player_display_name', 'position', 'recent_team', 'opponent_team', 'predicted_fantasy_points', 'fantasy_points']]
-    else: 
+    elif approach == "Systematic":
         df_output = df_output[['season', 'week', 'role', 'recent_team', 'opponent_team', 'predicted_fantasy_points', 'fantasy_points']]
+        
     return df_output
 
 
@@ -56,12 +69,13 @@ def main():
 
     model_options = {
         "XGBoost": f"models/{selected_approach.lower()}_xgb_approach_model.pkl",
-        "Linear Regression": f"models/{selected_approach.lower()}_lr_approach_model.pkl"
+        "Linear Regression": f"models/{selected_approach.lower()}_lr_approach_model.pkl",
+        "LSTM": "models/lstm_model.h5"
     }
     selected_model = st.sidebar.selectbox("Select a model:", list(model_options.keys()))
 
     with st.spinner("Loading data and generating predictions..."):
-        data = predict_and_merge(model_options[selected_model], selected_approach)
+        data = predictions(model_options[selected_model], selected_approach)
 
     if data.empty:
         return 
@@ -89,13 +103,17 @@ def main():
         data.columns = [
             "Season", "Week", "Player Name", "Position", "Recent Team", "Opponent Team", "Predicted Fantasy Points", "Actual Fantasy Points"
         ]
-    else:
+    elif selected_approach == "Systematic":
         role_filter = st.sidebar.multiselect("Role:", options=data['role'].unique())
         if role_filter:
             data = data[data['role'].isin(role_filter)]
 
         data.columns = [
             "Season", "Week", "Role", "Recent Team", "Opponent Team", "Predicted Fantasy Points", "Actual Fantasy Points"
+        ]
+    else:
+        data.columns = [
+            "Player ID", "Week", "Predicted Fantasy Points"
         ]
 
     # Sort the data by Season, Week, and Predicted Fantasy Points

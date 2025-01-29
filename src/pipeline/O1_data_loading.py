@@ -1,18 +1,10 @@
-import os
-import numpy as np
-import pandas as pd
-import joblib
 import nfl_data_py as nfl
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tensorflow.keras.models import Sequential, load_model, save_model
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
-from tensorflow.keras.callbacks import EarlyStopping
+import pandas as pd
 
-
-def load_data():
+#####################################################################################################################################
+# Load Data for individual approach
+#####################################################################################################################################
+def load_ind_data():
 
     df_ids = nfl.import_ids()
     df_roster = nfl.import_weekly_rosters(list(range(2018, 2025)))
@@ -144,7 +136,7 @@ def load_data():
     # Creating important features
     df_merged['rookie_flag'] = (df_merged['season'] == df_merged['draft_year']).astype(int)
     df_merged['home'] = (df_merged['home_team'] == df_merged['recent_team']).astype(int)
-    # df_merged['player_id'] = df_merged['player_id'].str.replace('00-00', '').astype(int)
+    df_merged['player_id'] = df_merged['player_id'].str.replace('00-00', '').astype(int)
 
     # volume_total stats
     df_merged['volume_total'] = (
@@ -302,268 +294,134 @@ def load_data():
                     .shift(1)
                     .rolling(window=3, min_periods=3)
                     .agg(metric))
-            )
-    
-    df_merged['time_index'] = df_merged['season'] * 100 + df_merged['week']
-    df_merged = df_merged.fillna(0)
+        )
 
+    df_merged['time_index'] = df_merged['season'] * 100 + df_merged['week']
+   
     return df_merged
 
-def edit_data(df):
 
-    df = df.drop(columns=['completions', 'attempts', 'passing_yards', 'sacks', 'depth_team', 'sack_yards', 'player_display_name',
-                          'passing_air_yards', 'pacr', 'carries', 'rushing_yards', 'receptions', 'targets', 'receiving_yards', 
-                          'racr', 'wopr', 'passing_bad_throws', 'times_pressured', 'receiving_rat', 'rushing_broken_tackles', 
-                          'draft_year', 'home_team', 'passer_rating', 'aggressiveness', 'efficiency', 'offense_snaps', 'game_id', 
-                          'interceptions', 'sack_fumbles_lost', 'rushing_fumbles_lost', 'receiving_fumbles_lost', 'rushing_tds', 
-                          'rushing_2pt_conversions', 'receiving_tds', 'receiving_2pt_conversions', 'passing_tds', 'status',
-                          'passing_2pt_conversions', 'passing_epa', 'rushing_epa', 'receiving_epa', 'position_encoded', 'acr_total',
-                          'home_score', 'away_score', 'position', 'opponent_team', 'recent_team', 'recent_team_points_scored',
-                          'turnover', 'points_total', 'yards_total', 'epa_total', 'volume_total', 'opponent_team_points_allowed',
-                          'player_rating_total', 'did_play'])
-    
-    df = df.sort_values(['player_id', 'season', 'week'])
+#####################################################################################################################################
+# Load Data for systematic approach
+#####################################################################################################################################
+def load_sys_data():
 
-    return df
+    df_rank = pd.read_csv('data/FantasyPros_Overall_ADP_Rankings.csv', encoding='ISO-8859-1',delimiter=';') #adp (average draft pick) ranking
+    df_weekly = nfl.import_weekly_data(list(range(2015,2025))) #player data
+    df_schedule = nfl.import_schedules(list(range(2015,2025))) #game data
+    df_weekly = df_weekly.rename(columns={'player_display_name': 'name'})
 
-def create_train_and_test_data(df):
-    df_train = df[df['time_index'] < 202401]
-    df_seq = df.copy()
-    return df_train, df_seq
+    #clean data
+    df_weekly = df_weekly[(df_weekly['season_type'] == 'REG') & (df_weekly['position'].isin(['QB', 'WR', 'RB', 'TE']))].reset_index() #only regualer season games
+    df_schedule = df_schedule[df_schedule['game_type'] == 'REG']
+    relevant_columns = ['season','week','home_team','away_team','home_score','away_score', 'spread_line','roof','surface','home_coach','away_coach',
+                        'stadium','game_id'] #first feature selection for better overview
 
-def prepare_data_for_training(df):
-    """
-    Bereitet die Daten für das LSTM-Modell vor.
-    """
-    df = df.sort_values(['player_id', 'season', 'week'])
-    
-    le = LabelEncoder()
-    player_id_encoded = le.fit_transform(df['player_id']).reshape(-1, 1)
-    
-    features = df.drop(['fantasy_points', 'player_id', 'week', 'season'], axis=1)
-    target = df['fantasy_points']
-    
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features)
-    
-    final_features = np.hstack([player_id_encoded, scaled_features])
-    feature_names = ['player_id_encoded'] + list(features.columns)
-    final_df = pd.DataFrame(final_features, columns=feature_names, index=df.index)
-    
-    return final_df.values, target.values, scaler, le
+    df_schedule = df_schedule[relevant_columns]
 
-def prepare_data_for_prediction_and_outcome(df_seq):
-    """
-    Prepare all data (2018-2024) for sequence prediction
-    """
-    # Sort chronologically
-    df_sorted = df_seq.sort_values(['player_id', 'season', 'week'])
-    
-    # Encode player_ids
-    le = LabelEncoder()
-    player_id_encoded = le.fit_transform(df_sorted['player_id']).reshape(-1, 1)
-    
-    # Scale features
-    features = df_sorted.drop(['fantasy_points', 'player_id', 'week', 'season'], axis=1)
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features)
-    
-    # Combine encoded IDs with scaled features
-    final_features = np.hstack([player_id_encoded, scaled_features])
-    
-    # Create final DataFrame with metadata
-    feature_names = ['player_id_encoded'] + list(features.columns)
-    prepared_df = pd.DataFrame(
-        final_features,
-        columns=feature_names,
-        index=df_sorted.index
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('OAK', 'LV', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('OAK', 'LV', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('OAK', 'LV', regex=False) 
+
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('STL', 'LA', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('STL', 'LA', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('STL', 'LA', regex=False) 
+
+    df_schedule['game_id'] = df_schedule['game_id'].str.replace('SD', 'LAC', regex=False)
+    df_schedule['home_team'] = df_schedule['home_team'].str.replace('SD', 'LAC', regex=False) 
+    df_schedule['away_team'] = df_schedule['away_team'].str.replace('SD', 'LAC', regex=False) 
+
+    #prepare df_weekly
+    df_weekly['season'] = df_weekly['season'].astype('int64') 
+    df_weekly['week'] = df_weekly['week'].astype('int64')
+    df_weekly['game_id_home_away'] = df_weekly['season'].astype(str) + '_' + df_weekly['week'].apply(lambda x: f"{x:02d}")+'_'+df_weekly['recent_team']+'_'+df_weekly['opponent_team'] #create game_id 
+    df_weekly['game_id_away_home'] = df_weekly['season'].astype(str) + '_' + df_weekly['week'].apply(lambda x: f"{x:02d}")+'_'+df_weekly['opponent_team']+'_'+df_weekly['recent_team'] 
+
+    #merge df_rank with df_weekly
+    df_merged = df_weekly.merge(
+        df_rank,
+        on=['name','season'],
+        how='left')
+
+    #prepare df
+    df_merged = pd.melt(
+        df_merged,
+        id_vars=['player_id', 'name', 'position', 'season', 'week','recent_team', 'opponent_team', 'fantasy_points','pos','rank'],
+        value_vars=['game_id_home_away', 'game_id_away_home'],
+        var_name='game_id_type',
+        value_name='game_id')
+
+    #merge df_merged with df_schedules
+    df_merged = pd.merge(df_merged, df_schedule[['home_team','away_team','home_score','away_score', 'spread_line','roof','surface',
+                                                'home_coach','away_coach','stadium','game_id']], on= 'game_id', how='inner')
+
+    df_merged['home'] = (df_merged['home_team'] == df_merged['recent_team']).astype(int)
+
+    # points_scored and points_allowed as metric for how strong recent_team and how weak opponent_team performed recently
+    df_merged['recent_team_points_scored'] = df_merged.apply(lambda row: row['home_score'] if row['home'] == 1 else row['away_score'], axis=1)
+    df_merged['opponent_team_points_allowed'] = df_merged['recent_team_points_scored']
+
+    df_unique_opponent_team_points_allowed = df_merged.drop_duplicates(subset=['game_id', 'opponent_team', 'opponent_team_points_allowed'])
+    df_unique_recent_team_points_scored = df_merged.drop_duplicates(subset=['game_id', 'recent_team', 'recent_team_points_scored'])
+
+    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed.sort_values(by=['opponent_team', 'season', 'week']).reset_index(drop=True)
+    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored.sort_values(by=['recent_team', 'season', 'week']).reset_index(drop=True)
+
+    df_unique_opponent_team_points_allowed['ewm_opponent_team_points_allowed_l3w'] = (
+        df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=3).mean())
+        .reset_index(level=0, drop=True)
     )
-    
-    # Add back metadata columns
-    prepared_df['original_player_id'] = df_sorted['player_id']
-    prepared_df['season'] = df_sorted['season']
-    prepared_df['week'] = df_sorted['week']
-    prepared_df['fantasy_points'] = df_sorted['fantasy_points']
-    
-    return prepared_df, scaler, le
 
-def create_sequences(data, target, seq_length=4):
-    """
-    Erstellt Sequenzen für das LSTM-Modell.
-    """
-    X, y = [], []
-    for i in range(len(data) - seq_length):
-        X.append(data[i:(i + seq_length)])
-        y.append(target[i + seq_length])
-    return np.array(X), np.array(y)
+    for metric in ['min', 'max']:
+            df_unique_opponent_team_points_allowed[f"{metric}_opponent_team_points_allowed_l3w"] = (
+                df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+                .apply(lambda x: x.shift(1).rolling(window=3, min_periods=3).agg(metric))  # shift(1) schließt aktuelle Woche aus
+                .reset_index(level=0, drop=True)  # Index zurücksetzen
+        )
 
-def create_model(input_shape):
-    """
-    Erstellt ein LSTM-Modell.
-    """
-    model = Sequential([
-        LSTM(128, return_sequences=True, input_shape=input_shape),
-        BatchNormalization(),
-        Dropout(0.2),
-        
-        LSTM(64, return_sequences=True),
-        BatchNormalization(),
-        Dropout(0.2),
-        
-        LSTM(32),
-        BatchNormalization(),
-        Dropout(0.2),
-        
-        Dense(16, activation='relu'),
-        Dense(1)
-    ])
-    
-    model.compile(optimizer='adam', loss='mse')
-    return model
+    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed[['game_id', 'opponent_team', 'ewm_opponent_team_points_allowed_l3w', 'min_opponent_team_points_allowed_l3w', 'max_opponent_team_points_allowed_l3w']]
+    df_merged = pd.merge(df_merged, df_unique_opponent_team_points_allowed, on=['game_id','opponent_team'], how='inner')
 
-def train_model(model, X_train, y_train, epochs=50, batch_size=32):
-    """
-    Trainiert das LSTM-Modell.
-    """
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-    history = model.fit(
-        X_train, y_train,
-        validation_split=0.2,
-        epochs=epochs,
-        batch_size=batch_size,
-        callbacks=[early_stopping],
-        verbose=1
+    df_unique_recent_team_points_scored['ewm_recent_team_points_scored_l3w'] = (
+        df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=1).mean())
+        .reset_index(level=0, drop=True)
     )
-    return model, history
 
-def save_model_artifacts(model, scaler, le, models_path='models'):
-    """
-    Speichert das Modell und die Skalierungsobjekte.
-    """
-    if not os.path.exists(models_path):
-        os.makedirs(models_path)
-    
-    save_model(model, os.path.join(models_path, 'lstm_model.h5'))
-    joblib.dump(scaler, os.path.join(models_path, 'scaler.joblib'))
-    joblib.dump(le, os.path.join(models_path, 'label_encoder.joblib'))
+    for metric in ['min', 'max']:
+        df_unique_recent_team_points_scored[f"{metric}_recent_team_points_scored_l3w"] = (
+            df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+            .apply(lambda x: x.shift(1).rolling(window=3, min_periods=1).agg(metric))  # shift(1) schließt aktuelle Woche aus
+            .reset_index(level=0, drop=True)  # Index zurücksetzen
+        )
 
-def load_model_artifacts(models_path='models'):
-    """
-    Lädt das gespeicherte Modell und die Skalierungsobjekte.
-    """
-    model = load_model(os.path.join(models_path, 'lstm_model.h5'))
-    scaler = joblib.load(os.path.join(models_path, 'scaler.joblib'))
-    le = joblib.load(os.path.join(models_path, 'label_encoder.joblib'))
-    return model, scaler, le
+    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored[['game_id', 'recent_team', 'ewm_recent_team_points_scored_l3w', 'min_recent_team_points_scored_l3w', 'max_recent_team_points_scored_l3w']]
+    df_merged = pd.merge(df_merged, df_unique_recent_team_points_scored, on=['game_id','recent_team'], how='inner')
 
-def predict_2024_season(model, prepared_df, scaler, le, sequence_length=6):
-    """
-    Predict 2024 season using prepared data
-    """
-    predictions = []
-    
-    # Get 2024 weeks
-    weeks_2024 = sorted(prepared_df[prepared_df['season'] == 2024]['week'].unique())
-    
-    for week in weeks_2024:
-        # Get active players in current week
-        current_players = prepared_df[
-            (prepared_df['season'] == 2024) & 
-            (prepared_df['week'] == week)
-        ]['original_player_id'].unique()
-        
-        for player in current_players:
-            # Get historical sequence
-            player_history = prepared_df[
-                (prepared_df['original_player_id'] == player) & 
-                ((prepared_df['season'] < 2024) | 
-                 ((prepared_df['season'] == 2024) & (prepared_df['week'] < week)))
-            ].tail(sequence_length-1)
-            
-            if len(player_history) < sequence_length-1:
-                continue
-                
-            # Get current week features
-            current_week = prepared_df[
-                (prepared_df['original_player_id'] == player) & 
-                (prepared_df['season'] == 2024) & 
-                (prepared_df['week'] == week)
-            ]
-            
-            # Combine sequence
-            sequence = pd.concat([player_history, current_week])
-            sequence_features = sequence.drop(['original_player_id', 'season', 'week', 'fantasy_points'], axis=1)
-            
-            # Reshape for LSTM
-            X = sequence_features.values.reshape(1, sequence_length, sequence_features.shape[1])
-            
-            # Predict
-            pred = model.predict(X, verbose=0)
-            
-            # Store prediction
-            predictions.append({
-                'player_id': player,
-                'week': week,
-                'predicted_fantasy_points': float(pred[0][0])
-            })
-    
-    return pd.DataFrame(predictions)
+    #drop missing values = players that were not in the adp df
+    df_merged = df_merged.dropna(subset=['rank'])
 
-def predict(model, prepared_df, sequence_length=6):
-    """
-    Macht Vorhersagen für die Saison 2024.
-    """
-    predictions = []
-    weeks_2024 = sorted(prepared_df[prepared_df['season'] == 2024]['week'].unique())
-    
-    for week in weeks_2024:
-        current_players = prepared_df[(prepared_df['season'] == 2024) & (prepared_df['week'] == week)]['original_player_id'].unique()
-        
-        for player in current_players:
-            player_history = prepared_df[
-                (prepared_df['original_player_id'] == player) & 
-                ((prepared_df['season'] < 2024) | ((prepared_df['season'] == 2024) & (prepared_df['week'] < week)))
-            ].tail(sequence_length-1)
-            
-            if len(player_history) < sequence_length-1:
-                continue
-            
-            current_week = prepared_df[
-                (prepared_df['original_player_id'] == player) & 
-                (prepared_df['season'] == 2024) & 
-                (prepared_df['week'] == week)
-            ]
-            
-            sequence = pd.concat([player_history, current_week])
-            sequence_features = sequence.drop(['original_player_id', 'season', 'week', 'fantasy_points'], axis=1)
-            X = sequence_features.values.reshape(1, sequence_length, sequence_features.shape[1])
-            pred = model.predict(X, verbose=0)
-            predictions.append({'player_id': player, 'week': week, 'predicted_fantasy_points': float(pred[0][0])})
-    
-    return pd.DataFrame(predictions)
+    #Rank players for each team and position based on their adp
 
-def analyze_model_performance(history):
-    """
-    Analysiert die Modellperformance.
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Model Loss Over Time')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # Sort the players by their draft rank (lower rank is better)
+    df_merged['rank'] = pd.to_numeric(df_merged['rank'], errors='coerce')  # Ensure rank is numeric
+    # Create new column that ranks players within each team and position for every game
+    df_merged['ranked_position'] = (
+        df_merged.groupby(['recent_team', 'position','game_id'])['rank']  # Group by team and position
+        .rank(method='min', ascending=True)  # Rank with smallest value having rank 1
+        .astype(int)  # Convert the rank to an integer
+    )
+    #Formatted column with the position and rank (e.g., 'WR1', 'RB2', etc.)
+    df_merged['role'] = df_merged['position'] + df_merged['ranked_position'].astype(str)
 
-def analyze_predictions(predictions_df, df_seq):
-    """
-    Vergleicht Vorhersagen mit den echten Werten.
-    """
-    analysis_df = predictions_df.merge(df_seq[df_seq['season'] == 2024][['player_id', 'week', 'fantasy_points']], on=['player_id', 'week'])
-    mae = mean_absolute_error(analysis_df['fantasy_points'], analysis_df['predicted_fantasy_points'])
-    mse = mean_squared_error(analysis_df['fantasy_points'], analysis_df['predicted_fantasy_points'])
-    r2 = r2_score(analysis_df['fantasy_points'], analysis_df['predicted_fantasy_points'])
-    
-    print(f"MAE: {mae:.2f}, MSE: {mse:.2f}, R2: {r2:.2f}")
-    return analysis_df
+    #rolling average of past fantasy points for each role
+    df_merged = df_merged.sort_values(by=['recent_team','role','season','week'])
+    df_merged['avg_fantasy_points'] = (
+        df_merged.groupby(['recent_team','role'])['fantasy_points']
+        .apply(lambda x: x.shift(1).rolling(window=5, min_periods=1).mean())  # Shift and calculate rolling mean
+    )
+
+    df_merged['time_index'] = df_merged['season'] * 100 + df_merged['week']
+
+    return df_merged
