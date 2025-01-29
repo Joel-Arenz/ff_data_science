@@ -3,8 +3,8 @@ import streamlit as st
 import joblib
 
 from pipeline.O1_data_loading import load_ind_data, load_sys_data
-from pipeline.O2_data_preparation import create_ind_train_and_test_data_for_lstm, prepare_ind_data_for_lstm_prediction_and_outcome, prepare_ind_features_for_lr_and_xgb, prepare_ind_output_for_lr_and_xgb, prepare_sys_features_for_lr_and_xgb, prepare_sys_output_for_lr_and_xgb, split_data_for_lr_and_xgb, prepare_ind_data_for_lstm_training, split_data_for_lstm
-from pipeline.O6_predict_functions import predict_2024_season_for_lstm
+from pipeline.O2_data_preparation import create_ind_train_and_test_data_for_lstm, create_sys_train_and_test_data_for_lstm, prepare_ind_data_for_lstm_prediction_and_outcome, prepare_ind_features_for_lr_and_xgb, prepare_ind_output_for_lr_and_xgb, prepare_sys_data_for_lstm_prediction_and_outcome, prepare_sys_features_for_lr_and_xgb, prepare_sys_output_for_lr_and_xgb, split_data_for_lr_and_xgb, prepare_ind_data_for_lstm_training, split_data_for_lstm
+from pipeline.O6_predict_functions import predict_2024_season_for_ind_lstm, predict_2024_season_for_sys_lstm
 from tensorflow.keras.losses import MeanSquaredError
 from tensorflow.keras.models import load_model
 
@@ -12,26 +12,19 @@ from tensorflow.keras.models import load_model
 
 @st.cache_data
 def predictions(model_path, approach):
-    # Load models via joblib
-    try:
-        if model_path.endswith('.h5'):
-            model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
-            label_encoder = joblib.load("models/label_encoder.joblib")
-            scaler = joblib.load("models/scaler.joblib")
-        else:
-            model = joblib.load(model_path)
-    except Exception as e:
-        st.error(f"Fehler beim Laden des Modells: {e}")
-        return pd.DataFrame()
 
     # Prepare Data
     if approach == "Individual":
         df = load_ind_data()
         if model_path.endswith('.h5'):
+            model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
+            label_encoder = joblib.load("../models/individual_label_encoder.joblib")
+            scaler = joblib.load("../models/individual_scaler.joblib")
             _, df_seq = create_ind_train_and_test_data_for_lstm(df)
             df_pred, _, _ = prepare_ind_data_for_lstm_prediction_and_outcome(df_seq)
-            df_output = predict_2024_season_for_lstm(model, df_pred, scaler, label_encoder)
+            df_output = predict_2024_season_for_ind_lstm(model, df_pred, scaler, label_encoder)
         else:
+            model = joblib.load(model_path)
             df_pred = prepare_ind_features_for_lr_and_xgb(df)
             df_output = prepare_ind_output_for_lr_and_xgb(df)
             df_pred = df_pred[df_pred['time_index'] > 202318]
@@ -39,15 +32,25 @@ def predictions(model_path, approach):
             X_test = df_pred.drop(columns=['fantasy_points'])
             y_pred = model.predict(X_test)
             df_output['predicted_fantasy_points'] = y_pred
-    else:
+
+    elif approach == 'Systematic':
         df = load_sys_data()
-        df_pred = prepare_sys_features_for_lr_and_xgb(df)
-        df_output = prepare_sys_output_for_lr_and_xgb(df)
-        df_pred = df_pred[df_pred['time_index'] > 202318]
-        df_output = df_output[df_output['season'] == 2024]
-        X_test = df_pred.drop(columns=['fantasy_points'])
-        y_pred = model.predict(X_test)
-        df_output['predicted_fantasy_points'] = y_pred
+        if model_path.endswith('.h5'):
+            model = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
+            label_encoder = joblib.load("../models/systematic_label_encoder.joblib")
+            scaler = joblib.load("../models/systematic_scaler.joblib")
+            _, df_seq = create_sys_train_and_test_data_for_lstm(df)
+            df_pred, _, _ = prepare_sys_data_for_lstm_prediction_and_outcome(df_seq)
+            df_output = predict_2024_season_for_sys_lstm(model, df_pred, scaler, label_encoder)            
+        else:
+            model = joblib.load(model_path)
+            df_pred = prepare_sys_features_for_lr_and_xgb(df)
+            df_output = prepare_sys_output_for_lr_and_xgb(df)
+            df_pred = df_pred[df_pred['time_index'] > 202318]
+            df_output = df_output[df_output['season'] == 2024]
+            X_test = df_pred.drop(columns=['fantasy_points'])
+            y_pred = model.predict(X_test)
+            df_output['predicted_fantasy_points'] = y_pred
 
     # Filter and sort output
     if approach == "Individual":
@@ -68,9 +71,9 @@ def main():
     selected_approach = st.sidebar.selectbox("Select an approach:", approach_options)
 
     model_options = {
-        "XGBoost": f"models/{selected_approach.lower()}_xgb_approach_model.pkl",
-        "Linear Regression": f"models/{selected_approach.lower()}_lr_approach_model.pkl",
-        "LSTM": "models/lstm_model.h5"
+        "XGBoost": f"../models/{selected_approach.lower()}_xgb_approach_model.pkl",
+        "Linear Regression": f"../models/{selected_approach.lower()}_lr_approach_model.pkl",
+        "LSTM": f"../models/{selected_approach.lower()}_lstm_approach_model.h5"
     }
     selected_model = st.sidebar.selectbox("Select a model:", list(model_options.keys()))
 

@@ -30,7 +30,7 @@ def prepare_sys_features_for_lr_and_xgb(df):
     #drop the first row for every position in df, because of missing value for avg_fantasy_points
     df = df.dropna() 
 
-    df = df[['time_index', 'recent_team', 'position', 'ranked_position', 'opponent_team', 'spread_line', 'roof', 'home', 'ewm_recent_team_points_scored_l3w', 'min_recent_team_points_scored_l3w', 'max_recent_team_points_scored_l3w', 'ewm_opponent_team_points_allowed_l3w', 'min_opponent_team_points_allowed_l3w', 'max_opponent_team_points_allowed_l3w', 'avg_fantasy_points','fantasy_points']]
+    df = df[['time_index', 'recent_team', 'position', 'ranked_position', 'opponent_team', 'spread_line', 'roof', 'home', 'ewm_recent_team_points_scored_l5w', 'min_recent_team_points_scored_l5w', 'max_recent_team_points_scored_l5w', 'ewm_opponent_team_points_allowed_l5w', 'min_opponent_team_points_allowed_l5w', 'max_opponent_team_points_allowed_l5w', 'mean_fantasy_points_l5w','fantasy_points']]
     return df
 
 def prepare_sys_output_for_lr_and_xgb(df):
@@ -124,6 +124,90 @@ def prepare_ind_data_for_lstm_prediction_and_outcome(df_seq):
     prepared_df['opponent_team'] = df_sorted['opponent_team']
     prepared_df['depth_team'] = df_sorted['depth_team']
     prepared_df['status'] = df_sorted['status']
+    prepared_df['season'] = df_sorted['season']
+    prepared_df['week'] = df_sorted['week']
+    prepared_df['fantasy_points'] = df_sorted['fantasy_points']
+    return prepared_df, scaler, le
+
+def create_sys_train_and_test_data_for_lstm(df):
+    #drop the first row for every position in df, because of missing value for avg_fantasy_points
+    df = df.dropna() 
+
+    df = df[['time_index', 'season', 'week', 'recent_team', 'position', 'ranked_position', 'opponent_team', 'spread_line', 'roof', 
+             'home', 'ewm_recent_team_points_scored_l5w', 'min_recent_team_points_scored_l5w', 'max_recent_team_points_scored_l5w', 
+             'ewm_opponent_team_points_allowed_l5w', 'min_opponent_team_points_allowed_l5w', 'max_opponent_team_points_allowed_l5w', 
+             'mean_fantasy_points_l5w', 'fantasy_points', 'role', 'role_id']]
+   
+    df = df.sort_values(['role_id', 'season', 'week'])
+
+    df_train = df[df['time_index'] < 202401]
+    df_seq = df.copy()
+    return df_train, df_seq
+
+def prepare_sys_data_for_lstm_training(df):
+    """
+    Prepare the data for the LSTM model.
+    """
+    df = df.sort_values(['role_id', 'season', 'week'])
+    
+    le = LabelEncoder()
+    role_id_encoded = le.fit_transform(df['role_id']).reshape(-1, 1)
+    recent_team_encoded = le.fit_transform(df['recent_team']).reshape(-1, 1)
+    opponent_team_encoded = le.fit_transform(df['opponent_team']).reshape(-1, 1)
+    position_encoded = le.fit_transform(df['position']).reshape(-1, 1)
+    roof_encoded = le.fit_transform(df['roof']).reshape(-1, 1)
+    
+    encoded_features = np.hstack([role_id_encoded, recent_team_encoded, opponent_team_encoded, position_encoded, roof_encoded])
+    
+    features = df.drop(['season', 'week', 'recent_team', 'position', 'opponent_team', 'roof', 'fantasy_points', 'role_id', 'role'], axis=1)
+    target = df['fantasy_points']
+    
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(features)
+    
+    final_features = np.hstack([encoded_features, scaled_features])
+    feature_names = ['role_id_encoded', 'recent_team_encoded', 'opponent_team_encoded', 'position_encoded', 'roof_encoded'] + list(features.columns)
+    final_df = pd.DataFrame(final_features, columns=feature_names, index=df.index)   
+    return final_df.values, target.values, scaler, le
+
+def prepare_sys_data_for_lstm_prediction_and_outcome(df_seq):
+    """
+    Prepare all data (2018-2024) for sequence prediction
+    """
+    # Sort chronologically
+    df_sorted = df_seq.sort_values(['role_id', 'season', 'week'])
+    
+    le = LabelEncoder()
+    role_id_encoded = le.fit_transform(df_seq['role_id']).reshape(-1, 1)
+    recent_team_encoded = le.fit_transform(df_seq['recent_team']).reshape(-1, 1)
+    opponent_team_encoded = le.fit_transform(df_seq['opponent_team']).reshape(-1, 1)
+    position_encoded = le.fit_transform(df_seq['position']).reshape(-1, 1)
+    roof_encoded = le.fit_transform(df_seq['roof']).reshape(-1, 1)
+    
+    encoded_features = np.hstack([role_id_encoded, recent_team_encoded, opponent_team_encoded, position_encoded, roof_encoded])
+    
+    features = df_seq.drop(['season', 'week', 'recent_team', 'position', 'opponent_team', 'roof', 'fantasy_points', 'role_id', 'role'], axis=1)
+    target = df_seq['fantasy_points']
+    
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(features)
+
+    # Combine encoded IDs with scaled features
+    final_features = np.hstack([encoded_features, scaled_features])
+    
+    # Create final DataFrame with metadata
+    feature_names = ['role_id_encoded', 'recent_team_encoded', 'opponent_team_encoded', 'position_encoded', 'roof_encoded'] + list(features.columns)
+    prepared_df = pd.DataFrame(
+        final_features,
+        columns=feature_names,
+        index=df_sorted.index
+    )
+    
+    # Add back metadata columns
+    prepared_df['original_role_id'] = df_sorted['role_id']
+    prepared_df['role'] = df_sorted['role']
+    prepared_df['recent_team'] = df_sorted['recent_team']
+    prepared_df['opponent_team'] = df_sorted['opponent_team']
     prepared_df['season'] = df_sorted['season']
     prepared_df['week'] = df_sorted['week']
     prepared_df['fantasy_points'] = df_sorted['fantasy_points']

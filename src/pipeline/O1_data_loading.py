@@ -205,14 +205,14 @@ def load_ind_data():
     df_unique_recent_team_points_scored = df_unique_recent_team_points_scored.sort_values(by=['recent_team', 'season', 'week']).reset_index(drop=True)
 
     df_unique_opponent_team_points_allowed['ewm_opponent_team_points_allowed_l3w'] = (
-        df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+        df_unique_opponent_team_points_allowed.groupby('opponent_team', group_keys=False)['opponent_team_points_allowed']
         .apply(lambda x: x.shift(1).ewm(span=3, min_periods=3).mean())
         .reset_index(level=0, drop=True)
     )
 
     for metric in ['min', 'max']:
             df_unique_opponent_team_points_allowed[f"{metric}_opponent_team_points_allowed_l3w"] = (
-                df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
+                df_unique_opponent_team_points_allowed.groupby('opponent_team', group_keys=False)['opponent_team_points_allowed']
                 .apply(lambda x: x.shift(1).rolling(window=3, min_periods=3).agg(metric))  # shift(1) schließt aktuelle Woche aus
                 .reset_index(level=0, drop=True)  # Index zurücksetzen
         )
@@ -221,14 +221,14 @@ def load_ind_data():
     df_merged = pd.merge(df_merged, df_unique_opponent_team_points_allowed, on=['game_id','opponent_team'], how='inner')
 
     df_unique_recent_team_points_scored['ewm_recent_team_points_scored_l3w'] = (
-        df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+        df_unique_recent_team_points_scored.groupby('recent_team', group_keys=False)['recent_team_points_scored']
         .apply(lambda x: x.shift(1).ewm(span=3, min_periods=3).mean())
         .reset_index(level=0, drop=True)
     )
 
     for metric in ['min', 'max']:
         df_unique_recent_team_points_scored[f"{metric}_recent_team_points_scored_l3w"] = (
-            df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
+            df_unique_recent_team_points_scored.groupby('recent_team', group_keys=False)['recent_team_points_scored']
             .apply(lambda x: x.shift(1).rolling(window=3, min_periods=3).agg(metric))  # shift(1) schließt aktuelle Woche aus
             .reset_index(level=0, drop=True)  # Index zurücksetzen
         )
@@ -253,7 +253,7 @@ def load_ind_data():
         group['streak'] = streak_list
         return group
 
-    df_merged = df_merged.groupby('player_id').apply(mark_streaks_with_bye)
+    df_merged = df_merged.groupby('player_id', group_keys=False).apply(mark_streaks_with_bye)
 
     # list of all relevant stats / columns that need to be considered as rolling features
     columns_to_roll = ['volume_total', 'player_rating_total', 'aggressiveness', 'efficiency', 'acr_total', 'offense_snaps', 
@@ -266,8 +266,8 @@ def load_ind_data():
     # cnt_games_over_20ffpts_l4w
     df_merged['cnt_games_over_20ffpts_l3w'] = (
         df_merged
-        .groupby('player_id')['fantasy_points']
-        .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play']) 
+        .groupby('player_id', group_keys=False)['fantasy_points']
+            .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play']) 
             .shift(1)  # Shifting the feature to next week in order to avoid leakage (don't know the stats of the week we want to predict)
             .rolling(window=3, min_periods=3)
             .apply(lambda y: (y > 20).sum()))
@@ -278,8 +278,8 @@ def load_ind_data():
         feature_name_1 = f"ewm_{col}_l3w"
         df_merged[feature_name_1] = (
             df_merged
-            .groupby('player_id')[col]
-            .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play'])
+            .groupby('player_id', group_keys=False)[col]
+                .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play'])
                 .shift(1)
                 .ewm(span=3, min_periods=3)
                 .mean())
@@ -289,8 +289,8 @@ def load_ind_data():
             feature_name_3 = f"{metric}_{col}_l3w"
             df_merged[feature_name_3] = (
                 df_merged
-                .groupby('player_id')[col]
-                .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play'])
+                .groupby('player_id', group_keys=False)[col]
+                    .apply(lambda x: x.where(df_merged.loc[x.index, 'did_play'])
                     .shift(1)
                     .rolling(window=3, min_periods=3)
                     .agg(metric))
@@ -306,13 +306,13 @@ def load_ind_data():
 #####################################################################################################################################
 def load_sys_data():
 
-    df_rank = pd.read_csv('data/FantasyPros_Overall_ADP_Rankings.csv', encoding='ISO-8859-1',delimiter=';') #adp (average draft pick) ranking
+    df_rank = pd.read_csv('../data/FantasyPros_Overall_ADP_Rankings.csv', encoding='ISO-8859-1',delimiter=';') #adp (average draft pick) ranking
     df_weekly = nfl.import_weekly_data(list(range(2015,2025))) #player data
     df_schedule = nfl.import_schedules(list(range(2015,2025))) #game data
     df_weekly = df_weekly.rename(columns={'player_display_name': 'name'})
 
     #clean data
-    df_weekly = df_weekly[(df_weekly['season_type'] == 'REG') & (df_weekly['position'].isin(['QB', 'WR', 'RB', 'TE']))].reset_index() #only regualer season games
+    df_weekly = df_weekly[df_weekly['season_type'] == 'REG'] #only regualer season games
     df_schedule = df_schedule[df_schedule['game_type'] == 'REG']
     relevant_columns = ['season','week','home_team','away_team','home_score','away_score', 'spread_line','roof','surface','home_coach','away_coach',
                         'stadium','game_id'] #first feature selection for better overview
@@ -367,36 +367,36 @@ def load_sys_data():
     df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed.sort_values(by=['opponent_team', 'season', 'week']).reset_index(drop=True)
     df_unique_recent_team_points_scored = df_unique_recent_team_points_scored.sort_values(by=['recent_team', 'season', 'week']).reset_index(drop=True)
 
-    df_unique_opponent_team_points_allowed['ewm_opponent_team_points_allowed_l3w'] = (
-        df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
-        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=3).mean())
+    df_unique_opponent_team_points_allowed['ewm_opponent_team_points_allowed_l5w'] = (
+        df_unique_opponent_team_points_allowed.groupby('opponent_team', group_keys=False)['opponent_team_points_allowed']
+        .apply(lambda x: x.shift(1).ewm(span=5, min_periods=5).mean())
         .reset_index(level=0, drop=True)
     )
 
     for metric in ['min', 'max']:
-            df_unique_opponent_team_points_allowed[f"{metric}_opponent_team_points_allowed_l3w"] = (
-                df_unique_opponent_team_points_allowed.groupby('opponent_team')['opponent_team_points_allowed']
-                .apply(lambda x: x.shift(1).rolling(window=3, min_periods=3).agg(metric))  # shift(1) schließt aktuelle Woche aus
+            df_unique_opponent_team_points_allowed[f"{metric}_opponent_team_points_allowed_l5w"] = (
+                df_unique_opponent_team_points_allowed.groupby('opponent_team', group_keys=False)['opponent_team_points_allowed']
+                .apply(lambda x: x.shift(1).rolling(window=5, min_periods=5).agg(metric))  # shift(1) schließt aktuelle Woche aus
                 .reset_index(level=0, drop=True)  # Index zurücksetzen
         )
 
-    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed[['game_id', 'opponent_team', 'ewm_opponent_team_points_allowed_l3w', 'min_opponent_team_points_allowed_l3w', 'max_opponent_team_points_allowed_l3w']]
+    df_unique_opponent_team_points_allowed = df_unique_opponent_team_points_allowed[['game_id', 'opponent_team', 'ewm_opponent_team_points_allowed_l5w', 'min_opponent_team_points_allowed_l5w', 'max_opponent_team_points_allowed_l5w']]
     df_merged = pd.merge(df_merged, df_unique_opponent_team_points_allowed, on=['game_id','opponent_team'], how='inner')
 
-    df_unique_recent_team_points_scored['ewm_recent_team_points_scored_l3w'] = (
-        df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
-        .apply(lambda x: x.shift(1).ewm(span=3, min_periods=1).mean())
+    df_unique_recent_team_points_scored['ewm_recent_team_points_scored_l5w'] = (
+        df_unique_recent_team_points_scored.groupby('recent_team', group_keys=False)['recent_team_points_scored']
+        .apply(lambda x: x.shift(1).ewm(span=5, min_periods=5).mean())
         .reset_index(level=0, drop=True)
     )
 
     for metric in ['min', 'max']:
-        df_unique_recent_team_points_scored[f"{metric}_recent_team_points_scored_l3w"] = (
-            df_unique_recent_team_points_scored.groupby('recent_team')['recent_team_points_scored']
-            .apply(lambda x: x.shift(1).rolling(window=3, min_periods=1).agg(metric))  # shift(1) schließt aktuelle Woche aus
+        df_unique_recent_team_points_scored[f"{metric}_recent_team_points_scored_l5w"] = (
+            df_unique_recent_team_points_scored.groupby('recent_team', group_keys=False)['recent_team_points_scored']
+            .apply(lambda x: x.shift(1).rolling(window=5, min_periods=5).agg(metric))  # shift(1) schließt aktuelle Woche aus
             .reset_index(level=0, drop=True)  # Index zurücksetzen
         )
 
-    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored[['game_id', 'recent_team', 'ewm_recent_team_points_scored_l3w', 'min_recent_team_points_scored_l3w', 'max_recent_team_points_scored_l3w']]
+    df_unique_recent_team_points_scored = df_unique_recent_team_points_scored[['game_id', 'recent_team', 'ewm_recent_team_points_scored_l5w', 'min_recent_team_points_scored_l5w', 'max_recent_team_points_scored_l5w']]
     df_merged = pd.merge(df_merged, df_unique_recent_team_points_scored, on=['game_id','recent_team'], how='inner')
 
     #drop missing values = players that were not in the adp df
@@ -417,11 +417,12 @@ def load_sys_data():
 
     #rolling average of past fantasy points for each role
     df_merged = df_merged.sort_values(by=['recent_team','role','season','week'])
-    df_merged['avg_fantasy_points'] = (
-        df_merged.groupby(['recent_team','role'])['fantasy_points']
-        .apply(lambda x: x.shift(1).rolling(window=5, min_periods=1).mean())  # Shift and calculate rolling mean
+    df_merged['mean_fantasy_points_l5w'] = (
+        df_merged.groupby(['recent_team','role'], group_keys=False)['fantasy_points']
+        .apply(lambda x: x.shift(1).rolling(window=5, min_periods=5).mean())  # Shift and calculate rolling mean
     )
 
+    df_merged = df_merged[~df_merged['role'].isin(['QB2', 'FB1', 'TE3', 'WR5', 'RB4', 'HB1', 'WR6'])]
     df_merged['time_index'] = df_merged['season'] * 100 + df_merged['week']
-
+    df_merged['role_id'] = df_merged['role'] + df_merged['recent_team']
     return df_merged

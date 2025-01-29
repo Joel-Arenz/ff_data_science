@@ -52,14 +52,20 @@ def analyze_model_performance_for_lstm(history):
     plt.grid(True)
     plt.show()
 
+    # Print out complete training and validation loss
+    print("Training Loss:", history.history['loss'])
+    print("Validation Loss:", history.history['val_loss'])
+
 def analyze_predictions_for_lstm(predictions_df):
     """
     Vergleicht Vorhersagen mit den echten Werten.
     """
     mae = mean_absolute_error(predictions_df['fantasy_points'], predictions_df['predicted_fantasy_points'])
     mse = mean_squared_error(predictions_df['fantasy_points'], predictions_df['predicted_fantasy_points'])
+    rmse = np.sqrt(mse)
     r2 = r2_score(predictions_df['fantasy_points'], predictions_df['predicted_fantasy_points'])
+    spearman_corr = spearmanr(predictions_df['fantasy_points'], predictions_df['predicted_fantasy_points'])[0]
     
-    print(f"MAE: {mae:.2f}, MSE: {mse:.2f}, R2: {r2:.2f}")
+    print(f"MAE: {mae:.2f}, MSE: {mse:.2f}, RMSE: {rmse:.2f}, R2: {r2:.2f}, Spearman Rank Correlation: {spearman_corr:.2f}")
     return predictions_df
 
