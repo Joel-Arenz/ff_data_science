@@ -17,7 +17,7 @@ def create_preprocessor_for_lr_and_xgb(df_merged):
     categorical_features = X.select_dtypes(include=['object']).columns
 
     numeric_transformer = SimpleImputer(strategy="median")
-    categorical_transformer = OneHotEncoder(drop='first', sparse_output=False)
+    categorical_transformer = OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore')
 
     preprocessor = ColumnTransformer(
         transformers=[

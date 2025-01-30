@@ -3,7 +3,7 @@ from xgboost import XGBRegressor
 from pipeline.O1_data_loading import load_ind_data, load_sys_data
 from pipeline.O2_data_preparation import create_ind_train_and_test_data_for_lstm, create_sequences_for_lstm, create_sys_train_and_test_data_for_lstm, prepare_ind_data_for_lstm_prediction_and_outcome, prepare_ind_features_for_lr_and_xgb, prepare_sys_data_for_lstm_prediction_and_outcome, prepare_sys_data_for_lstm_training, prepare_sys_features_for_lr_and_xgb, split_data_for_lr_and_xgb, prepare_ind_data_for_lstm_training, split_data_for_lstm
 from pipeline.O3_pipeline_implementation import create_model_for_lstm, create_preprocessor_for_lr_and_xgb, optimize_hyperparameters_for_lr_and_xgb, train_model_for_lstm
-from pipeline.O4_model_evaluation import analyze_model_performance_for_lstm, analyze_predictions_for_lstm, evaluate_models_for_lr_and_xgb, plot_feature_importances_for_lr_and_xgb
+from pipeline.O4_model_evaluation import analyze_model_performance_for_lstm, evaluate_predictions_for_lstm, evaluate_models_for_lr_and_xgb, plot_coefs_for_lr_and_xgb, plot_feature_importances_for_lr_and_xgb, plot_results_for_lr_and_xgb, plot_results_for_lstm, plot_shap_analysis_for_lstm
 from pipeline.O5_model_deployment import save_model_artifacts_for_lstm, save_model_for_lr_and_xgb
 from pipeline.O6_predict_functions import predict_2024_season_for_ind_lstm, predict_2024_season_for_sys_lstm
 
@@ -46,8 +46,10 @@ def main():
         }),
         'individual_xgb_approach': (XGBRegressor(), X_train_ind, X_test_ind, y_train_ind, y_test_ind, preprocessor_ind,  {
             'model__n_estimators': [100, 500],
-            'model__max_depth': [3, 6],
-            'model__learning_rate': [0.05, 0.1]
+            'model__max_depth': [3, 5],
+            'model__learning_rate': [0.05, 0.1],
+            'model__alpha': [0, 0.1],
+            'model__gamma': [0, 0.1]
         }),
         'systematic_lr_approach': (LinearRegression(), X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys, {
             'model__fit_intercept': [True, False],
@@ -55,8 +57,10 @@ def main():
         }),
         'systematic_xgb_approach': (XGBRegressor(), X_train_sys, X_test_sys, y_train_sys, y_test_sys, preprocessor_sys, {
             'model__n_estimators': [100, 500],
-            'model__max_depth': [3, 6],
-            'model__learning_rate': [0.05, 0.1]
+            'model__max_depth': [3, 5],
+            'model__learning_rate': [0.05, 0.1],
+            'model__alpha': [0, 0.1],
+            'model__gamma': [0, 0.1]
         })
     }
 
@@ -72,6 +76,7 @@ def main():
         
         # Get feature names after preprocessing
         feature_names = preprocessor.get_feature_names_out()
+        plot_results_for_lr_and_xgb(best_model, X_test, y_test)
         plot_feature_importances_for_lr_and_xgb(best_model, X_train_transformed, feature_names)
         
         save_model_for_lr_and_xgb(best_model, approach_name)
@@ -88,7 +93,8 @@ def main():
         analyze_model_performance_for_lstm(history_lstm)
         save_model_artifacts_for_lstm(approach_name, model_lstm, scaler_lstm_train, le_lstm_train)
         predictions_lstm_2024 = predict_2024_season(model_lstm, df_lstm_test, scaler_lstm_pred, le_lstm_pred)
-        analyze_predictions_for_lstm(predictions_lstm_2024)
+        evaluate_predictions_for_lstm(predictions_lstm_2024)
+        plot_results_for_lstm(predictions_lstm_2024)
 
     print("Analyse abgeschlossen!")
 
