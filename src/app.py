@@ -21,7 +21,7 @@ def predictions(model_path, approach):
             label_encoder = joblib.load("../models/individual_label_encoder.joblib")
             scaler = joblib.load("../models/individual_scaler.joblib")
             _, df_seq = create_ind_train_and_test_data_for_lstm(df)
-            df_pred, _, _ = prepare_ind_data_for_lstm_prediction_and_outcome(df_seq)
+            _, df_pred, _, _ = prepare_ind_data_for_lstm_prediction_and_outcome(df_seq)
             df_output = predict_2024_season_for_ind_lstm(model, df_pred, scaler, label_encoder)
         else:
             model = joblib.load(model_path)
@@ -40,7 +40,7 @@ def predictions(model_path, approach):
             label_encoder = joblib.load("../models/systematic_label_encoder.joblib")
             scaler = joblib.load("../models/systematic_scaler.joblib")
             _, df_seq = create_sys_train_and_test_data_for_lstm(df)
-            df_pred, _, _ = prepare_sys_data_for_lstm_prediction_and_outcome(df_seq)
+            _, df_pred, _, _ = prepare_sys_data_for_lstm_prediction_and_outcome(df_seq)
             df_output = predict_2024_season_for_sys_lstm(model, df_pred, scaler, label_encoder)            
         else:
             model = joblib.load(model_path)

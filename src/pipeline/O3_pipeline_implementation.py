@@ -34,24 +34,19 @@ def create_pipeline_for_lr_and_xgb(model, preprocessor):
         ('scaler', StandardScaler()),
         ('model', model)
     ])
+
     return pipeline
 
 def optimize_hyperparameters_for_lr_and_xgb(model, param_grid, X_train, y_train, preprocessor):
 
     pipeline = create_pipeline_for_lr_and_xgb(model, preprocessor)
-    
+    pipeline.fit(X_train, y_train)
     grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, cv=TimeSeriesSplit(n_splits=3), verbose=2)
     grid_search.fit(X_train, y_train)
     
     print(f"Best parameters found: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_}")    
     return grid_search.best_estimator_
-
-def save_model_for_lr_and_xgb(model, approach_name):
-    # Speicherpfad definieren
-    file_path = f"models/{approach_name}_model.pkl"
-    joblib.dump(model, file_path)
-    print(f"Modell '{approach_name}' wurde unter '{file_path}' gespeichert.")
 
 def create_model_for_lstm(input_shape):
     """

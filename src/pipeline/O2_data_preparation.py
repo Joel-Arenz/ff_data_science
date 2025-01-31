@@ -127,7 +127,9 @@ def prepare_ind_data_for_lstm_prediction_and_outcome(df_seq):
     prepared_df['season'] = df_sorted['season']
     prepared_df['week'] = df_sorted['week']
     prepared_df['fantasy_points'] = df_sorted['fantasy_points']
-    return prepared_df, scaler, le
+
+    prepared_df = prepared_df[prepared_df['player_display_name'] != 0]
+    return feature_names, prepared_df, scaler, le
 
 def create_sys_train_and_test_data_for_lstm(df):
     #drop the first row for every position in df, because of missing value for avg_fantasy_points
@@ -211,7 +213,7 @@ def prepare_sys_data_for_lstm_prediction_and_outcome(df_seq):
     prepared_df['season'] = df_sorted['season']
     prepared_df['week'] = df_sorted['week']
     prepared_df['fantasy_points'] = df_sorted['fantasy_points']
-    return prepared_df, scaler, le
+    return feature_names, prepared_df, scaler, le
 
 def create_sequences_for_lstm(data, target, seq_length=4):
     """
@@ -228,4 +230,6 @@ def split_data_for_lstm(X, y):
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:] 
     return X_train, X_test, y_train, y_test
+
+
 
